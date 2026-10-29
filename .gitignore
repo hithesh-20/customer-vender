@@ -1,0 +1,275 @@
+# =============================================================================
+# VendorSaathi - Git Ignore File
+# =============================================================================
+
+# =============================================================================
+# General
+# =============================================================================
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Build and compilation files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# =============================================================================
+# Node.js / Backend
+# =============================================================================
+
+# Dependencies
+node_modules/
+
+# npm debug logs
+npm-debug.log*
+
+# npm package-lock files (optional - can be committed)
+# package-lock.json
+# yarn.lock
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Local env files
+.env
+.env.test
+.env.development
+.env.production
+
+# Build output
+dist/
+build/
+
+# =============================================================================
+# Flutter / Mobile App
+# =============================================================================
+
+# Flutter build outputs
+.build/
+build/
+
+# Flutter IDE specific
+.flutter-plugins-dependencies
+.packages
+flutter_export_environment.sh
+
+# Flutter pub cache
+.pub-cache/
+.pub/
+
+# Flutter test
+.coverage/
+
+# Android
+android/.gradle/
+android/app/build/
+android/build/
+android/gradle/
+android/gradle.wrapper/
+android/local.properties
+android/*.iml
+android/*.iws
+android/*.ipr
+
+# iOS
+ios/.symlinks/
+ios/Pods/
+ios/build/
+ios/*.xcworkspace/
+ios/*.pbxuser
+ios/*.mode1v3
+ios/*.mode2v3
+ios/*.perspectivev3
+ios/*.plist
+
+# macOS
+macos/.symlinks/
+macos/Pods/
+macos/build/
+
+# Linux
+linux/.symlinks/
+linux/build/
+
+# Windows
+windows/.symlinks/
+windows/build/
+
+# Web
+web/.dart_tool/
+
+# =============================================================================
+# Python / AI Models
+# =============================================================================
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.venv/
+ENV/
+
+# IDE
+.pydevproject
+.pyhistory
+
+# Testing
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# =============================================================================
+# Next.js / Customer Website
+# =============================================================================
+
+# Next.js build output
+.next/
+out/
+
+# Next.js cache
+.cache/
+.next/cache/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# =============================================================================
+# Database
+# =============================================================================
+
+# PostgreSQL data (if using Docker volumes, this may not be needed)
+*.db
+*.sqlite
+*.sqlite3
+
+# =============================================================================
+# Docker
+# =============================================================================
+
+# Docker files
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Docker volumes (if not using named volumes)
+*_data/
+
+# =============================================================================
+# Uploads and Temporary Files
+# =============================================================================
+
+# Upload directories (keep the directory, ignore contents)
+uploads/temp/*
+uploads/public/*
+!uploads/temp/
+!uploads/public/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# =============================================================================
+# Logs
+# =============================================================================
+
+# Log files
+*.log
+logs/
+logs/*
+!logs/.gitkeep
+
+# =============================================================================
+# SSL Certificates
+# =============================================================================
+
+# SSL certificates (keep the directory, ignore contents)
+nginx/ssl/*
+!nginx/ssl/
+!nginx/ssl/.gitkeep
+
+# =============================================================================
+# Documentation
+# =============================================================================
+
+# Generated documentation
+docs/api/
+docs/build/
+
+# =============================================================================
+# Testing
+# =============================================================================
+
+# Test files (keep test directories, ignore generated files)
+coverage/
+.nyc_output/
+
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+
+# Thumbnail cache
+.thumbnails/
+
+# Backup files
+*.bak
+*.backup
+
+# Minified files (keep source files)
+*.min.js
+*.min.css
+
+# =============================================================================

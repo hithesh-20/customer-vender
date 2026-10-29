@@ -1,0 +1,298 @@
+version: '3.8'
+
+# =============================================================================
+# VendorSaathi - Production Docker Compose
+# =============================================================================
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This file extends the base docker-compose.yml with production-specific
+# configurations.
+#
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database (Production)
+  # ---------------------------------------------------------------------------
+  database:
+    image: postgres:15-alpine
+    container_name: vendor_saathi_db_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-vendorsaathi_prod}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-your_secure_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./backend/src/config/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - vendor_saathi_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache (Production)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: vendor_saathi_redis_prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-your_secure_redis_password} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data_prod:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - vendor_saathi_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-your_secure_redis_password}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Backend API Server (Production)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: vendor_saathi_backend_prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3000}
+      DB_HOST: database
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-vendorsaathi_prod}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-your_secure_password}
+      DB_DIALECT: postgres
+      DB_SSL: 'true'
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-your_secure_redis_password}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-key-minimum-32-characters}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET:-}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      LOG_LEVEL: info
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    networks:
+      - vendor_saathi_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  # ---------------------------------------------------------------------------
+  # AI/ML Services (Production)
+  # ---------------------------------------------------------------------------
+  ai:
+    build:
+      context: ./ai_models
+      dockerfile: Dockerfile
+      args:
+        PYTHON_ENV: production
+    container_name: vendor_saathi_ai_prod
+    restart: unless-stopped
+    environment:
+      PYTHON_ENV: production
+      AI_API_PORT: ${AI_API_PORT:-5000}
+      AI_API_HOST: 0.0.0.0
+      DB_HOST: database
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-vendorsaathi_prod}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-your_secure_password}
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "${AI_API_PORT:-5000}:5000"
+    volumes:
+      - ./ai_models:/app
+    networks:
+      - vendor_saathi_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Customer Website (Production)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./web_customer
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: vendor_saathi_web_prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://backend:3000/api/v1
+      NEXT_PUBLIC_AI_API_URL: http://ai:5000/api/v1
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      NEXT_PUBLIC_RAZORPAY_KEY: ${RAZORPAY_KEY_ID:-}
+      NEXT_PUBLIC_BASE_URL: ${WEB_BASE_URL:-http://localhost:3001}
+    depends_on:
+      backend:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-3001}:3000"
+    volumes:
+      - ./web_customer:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - vendor_saathi_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy (Production)
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:1-alpine
+    container_name: vendor_saathi_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    networks:
+      - vendor_saathi_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+# ---------------------------------------------------------------------------
+# Volumes (Production)
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data_prod:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/lib/docker/volumes/vendor_saathi_postgres_data_prod/_data
+      o: bind
+  redis_data_prod:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/lib/docker/volumes/vendor_saathi_redis_data_prod/_data
+      o: bind
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  vendor_saathi_network:
+    driver: bridge
+    name: vendor_saathi_network

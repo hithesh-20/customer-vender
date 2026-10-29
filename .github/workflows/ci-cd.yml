@@ -1,0 +1,61 @@
+name: VendorSaathi Production CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Node.js API & Database Integration Suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  python-ai-tests:
+    name: Python AI/ML Forecasting & 2-Opt Mobility Engine
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ai_models
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: |
+          python3 -c "
+          from ml_engines import forecast_demand_ml, optimize_route_ml
+          res = forecast_demand_ml({'products': [{'id': '1', 'name': 'Rice', 'category': 'Groceries', 'price': 60, 'stock': 10}], 'horizonDays': 7})
+          assert len(res['forecasts']) == 1
+          opt = optimize_route_ml({'origin': {'latitude': 13.08, 'longitude': 74.99}, 'stops': [{'name': 'A', 'latitude': 13.09, 'longitude': 75.00}]})
+          assert opt['totalDistanceKm'] > 0
+          "
+
+  web-build:
+    name: Vendor Console & Customer Storefront Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web_customer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web_customer/package-lock.json
+      - run: npm ci
+      - run: npm run build
